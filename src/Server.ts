@@ -1,7 +1,7 @@
 import 'reflect-metadata';
-import ExpressGraphQl from 'express-graphql';
 import * as bodyParser from 'body-parser';
 import * as controllers from './controllers';
+import { ApolloServer } from 'apollo-server-express'
 import { Server } from '@overnightjs/core';
 import { Logger } from '@overnightjs/logger';
 import { getSchema } from './graphql';
@@ -32,25 +32,23 @@ class AppServer extends Server {
         super.addControllers(ctlrInstances);
     }
 
-    private async setGraphQLService() {
+    private async setApolloServer() {
         try {
             // tslint:disable-next-line: no-console
             const schema = await getSchema()
 
-
             if (!schema) { throw (Error('No Schema given')) }
 
-            this.app.use('/graphql', ExpressGraphQl({
-                schema,
-                graphiql: true,
-            }))
+            const server = new ApolloServer({ schema, playground: true })
+
+            server.applyMiddleware({ app: this.app })
+
         } catch (error) {
             Logger.Err(error)
         }
     }
-
     public async start(port: number | string) {
-        await this.setGraphQLService()
+        await this.setApolloServer()
 
         this.app.get('*', (_, res) => {
             res.send(this.SERVER_STARTED + port);

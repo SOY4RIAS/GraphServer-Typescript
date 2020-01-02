@@ -1,33 +1,55 @@
+import { Logger } from '@overnightjs/logger';
+
+
 import 'reflect-metadata';
 
-import { Arg, FieldResolver, Query, Resolver, Root, Mutation, Args } from 'type-graphql';
-import assert from 'assert'
-import { projects, clientes, IClienteData } from '../data';
+import { Arg, Query, Resolver, Mutation, Float } from 'type-graphql';
+
+
+
 import Cliente from '../schemas/Cliente';
-import { Logger } from '@overnightjs/logger';
-import ClienteArg from '../args/ClienteArg';
+
+import ClienteArg, { UpdateCliente } from '../args/ClienteArg';
+import ClienteModel, { IClienteModel } from './../../models/Cliente'
 
 @Resolver(of => Cliente)
 class ClienteResolver {
 
     @Query(returns => [Cliente])
-    public fetchClientes(): IClienteData[] {
-        return clientes
+    public fetchClientes(@Arg('limit', { nullable: true }) limit: number) {
+        return ClienteModel.find().limit(limit)
     }
 
-    @Query(returns => Cliente)
-    public getClienteById(@Arg('id') id: number): IClienteData | undefined {
-        return clientes.find(cliente => cliente.id === id)
+    @Query(returns => Cliente, { nullable: true })
+    public async getClienteById(@Arg('id') id: string) {
+        return await ClienteModel.findById(id)
     }
 
     @Mutation(of => Cliente)
-    public clienteInput(@Arg('cliente') cliente: ClienteArg) {
-        const ids = clientes.map(c => c.id)
-        const maxId = Math.max(...ids)
-        Logger.Info({ maxId, msg: 'max id' })
-        const newCliente: IClienteData = { id: maxId + 1, ...cliente }
-        clientes.push(newCliente)
+    public async clienteInput(@Arg('cliente') cliente: ClienteArg) {
+        const newCliente = new ClienteModel({ ...cliente })
+        await newCliente.save()
         return newCliente
+    }
+
+    @Mutation(of => Cliente)
+    public async updateCliente(@Arg('cliente') cliente: UpdateCliente) {
+        const _id = cliente.id
+
+        if (!_id) { throw Error('id is mandatory'); }
+
+        delete cliente.id
+
+        return await ClienteModel.findOneAndUpdate(
+            { _id }, { ...cliente }, { new: true },
+        )
+    }
+
+    @Mutation(returns => Float, { nullable: true })
+    public async deleteCliente(@Arg('id') _id: string) {
+        const result = await ClienteModel.deleteOne({ _id })
+
+        return result.ok
     }
 }
 
