@@ -1,7 +1,7 @@
 
 import 'reflect-metadata';
 
-import { Field, Int, ObjectType, registerEnumType } from 'type-graphql'
+import { Field, Int, ObjectType, registerEnumType, ID } from 'type-graphql'
 import Emails from './Emails';
 import Pedidos from './Pedidos';
 import { IEmails, IPedidos } from '../data';
@@ -17,8 +17,8 @@ registerEnumType(ClienteTipo, {
 
 @ObjectType()
 export default class Cliente {
-    @Field((type) => Int, { nullable: true })
-    public id?: number;
+    @Field((type) => ID, { nullable: true })
+    public id?: string;
 
     @Field()
     public nombre: string
